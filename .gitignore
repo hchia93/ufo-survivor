@@ -52,8 +52,6 @@ Plugins/**/Binaries/*
 
 # Builds
 Build/*
-
-# Whitelist PakBlacklist-<BuildConfiguration>.txt files
 !Build/*/
 Build/*/**
 !Build/*/PakBlacklist*.txt
@@ -73,3 +71,7 @@ Plugins/**/Intermediate/*
 
 # Cache files for the editor to use
 DerivedDataCache/*
+
+# Ignore all Unreal assets (Blueprints, Maps, Materials, Meshes, etc.)
+Content/**/*.uasset
+Content/**/*.umap
