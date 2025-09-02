@@ -6,11 +6,9 @@
 #include "AbilityComponent.generated.h"
 
 /*
- * AbilityComponent : 
- * - Handles activation of abilities on runtime.
- * - Manages different types of abilities (Active, Passive, Innate)
+ * AbilityComponent :
  */
-UCLASS(ClassGroup=(Ability), meta=(BlueprintSpawnableComponent))
+UCLASS(ClassGroup = (Ability), meta = (BlueprintSpawnableComponent))
 class TUNGSTEN_API UAbilityComponent : public UActorComponent
 {
 	GENERATED_BODY()
@@ -28,7 +26,7 @@ public:
 
 	// Execute all abilities if possible
 	UFUNCTION(BlueprintCallable, Category = "Ability")
-	void ExecuteAllAbilities();
+	void TryExecuteAllAbilities();
 
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 

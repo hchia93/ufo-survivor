@@ -1,14 +1,14 @@
 #include "Ability/PlayerAbilityComponent.h"
-#include "Ability/AbilityInnate.h"
 #include "Ability/AbilityActive.h"
 #include "Ability/AbilityPassive.h"
+#include "Ability/AbilityBase.h"
 #include "Engine/World.h"
 #include "TimerManager.h"
 
 UPlayerAbilityComponent::UPlayerAbilityComponent()
 {
 	PrimaryComponentTick.bCanEverTick = true;
-	
+
 	// Initialize arrays
 	ActiveAbilitySlots.SetNum(MAX_ACTIVE_SLOTS);
 	PassiveAbilitySlots.SetNum(MAX_PASSIVE_SLOTS);
@@ -17,49 +17,27 @@ UPlayerAbilityComponent::UPlayerAbilityComponent()
 void UPlayerAbilityComponent::BeginPlay()
 {
 	Super::BeginPlay();
-	
+
 	InitializeAbilities();
 }
 
 void UPlayerAbilityComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
-	
+
 	// Check and trigger abilities automatically
 	CheckAndTriggerAbilities();
 }
 
 void UPlayerAbilityComponent::InitializeAbilities()
 {
-	SetupInnateAbilities();
+	// Innate abilities are assigned via Blueprint; no code-side creation
 	SetupAbilitySlots();
 }
 
 void UPlayerAbilityComponent::SetupInnateAbilities()
 {
-	// Create innate abilities
-	AttackAbility = NewObject<UAbilityInnate>(this);
-	SpecialAbility = NewObject<UAbilityInnate>(this);
-	DodgeAbility = NewObject<UAbilityInnate>(this);
-	
-	// Set up innate abilities (these should be configured in Blueprint)
-	if (AttackAbility)
-	{
-		AttackAbility->SetWorldContext(GetWorld());
-		AttackAbility->SetOwnerActor(GetOwner());
-	}
-	
-	if (SpecialAbility)
-	{
-		SpecialAbility->SetWorldContext(GetWorld());
-		SpecialAbility->SetOwnerActor(GetOwner());
-	}
-	
-	if (DodgeAbility)
-	{
-		DodgeAbility->SetWorldContext(GetWorld());
-		DodgeAbility->SetOwnerActor(GetOwner());
-	}
+	// Deprecated: no-op; kept for backward compatibility if called
 }
 
 void UPlayerAbilityComponent::SetupAbilitySlots()
@@ -69,105 +47,95 @@ void UPlayerAbilityComponent::SetupAbilitySlots()
 	{
 		ActiveAbilitySlots[i] = nullptr;
 	}
-	
+
 	for (int32 i = 0; i < MAX_PASSIVE_SLOTS; ++i)
 	{
 		PassiveAbilitySlots[i] = nullptr;
 	}
 }
 
-bool UPlayerAbilityComponent::AddActiveAbility(UAbilityActive* Ability, int32 SlotIndex)
+EAbilityAddRemoveResult UPlayerAbilityComponent::AddActiveAbility(UAbilityBase* Ability)
 {
 	if (!Ability)
 	{
-		return false;
+		return EAbilityAddRemoveResult::UnknownAbility;
 	}
-	
-	// If no specific slot specified, find first empty slot
-	if (SlotIndex == -1)
+
+	// Validate ability type
+	if (Ability->AbilityType != EAbilityType::Active)
 	{
-		for (int32 i = 0; i < MAX_ACTIVE_SLOTS; ++i)
+		return EAbilityAddRemoveResult::IncompatibleType;
+	}
+
+	// Find first empty slot
+	for (int32 i = 0; i < MAX_ACTIVE_SLOTS; ++i)
+	{
+		if (!ActiveAbilitySlots[i])
 		{
-			if (!ActiveAbilitySlots[i])
-			{
-				SlotIndex = i;
-				break;
-			}
+			Ability->SetOwner(GetOwner());
+			Ability->SlotType = EAbilitySlotType::Active;
+			ActiveAbilitySlots[i] = Ability;
+			return EAbilityAddRemoveResult::Success;
 		}
 	}
-	
-	// Validate slot index
-	if (!IsValidSlotIndex(SlotIndex, true))
-	{
-		return false;
-	}
-	
-	// Set up ability
-	Ability->SetWorldContext(GetWorld());
-	Ability->SetOwnerActor(GetOwner());
-	
-	// Add to slot
-	ActiveAbilitySlots[SlotIndex] = Ability;
-	
-	return true;
+
+	return EAbilityAddRemoveResult::NoEmptySlot;
 }
 
-bool UPlayerAbilityComponent::AddPassiveAbility(UAbilityPassive* Ability, int32 SlotIndex)
+EAbilityAddRemoveResult UPlayerAbilityComponent::AddPassiveAbility(UAbilityBase* Ability)
 {
 	if (!Ability)
 	{
-		return false;
+		return EAbilityAddRemoveResult::UnknownAbility;
 	}
-	
-	// If no specific slot specified, find first empty slot
-	if (SlotIndex == -1)
+
+	// Validate ability type
+	if (Ability->AbilityType != EAbilityType::Passive)
 	{
-		for (int32 i = 0; i < MAX_PASSIVE_SLOTS; ++i)
+		return EAbilityAddRemoveResult::IncompatibleType;
+	}
+
+	// Find first empty slot
+	for (int32 i = 0; i < MAX_PASSIVE_SLOTS; ++i)
+	{
+		if (!PassiveAbilitySlots[i])
 		{
-			if (!PassiveAbilitySlots[i])
-			{
-				SlotIndex = i;
-				break;
-			}
+			Ability->SetOwner(GetOwner());
+			Ability->SlotType = EAbilitySlotType::Passive;
+			PassiveAbilitySlots[i] = Ability;
+			return EAbilityAddRemoveResult::Success;
 		}
 	}
-	
-	// Validate slot index
-	if (!IsValidSlotIndex(SlotIndex, false))
-	{
-		return false;
-	}
-	
-	// Set up ability
-	Ability->SetWorldContext(GetWorld());
-	Ability->SetOwnerActor(GetOwner());
-	
-	// Add to slot
-	PassiveAbilitySlots[SlotIndex] = Ability;
-	
-	return true;
+
+	return EAbilityAddRemoveResult::NoEmptySlot;
 }
 
-bool UPlayerAbilityComponent::RemoveActiveAbility(int32 SlotIndex)
+EAbilityAddRemoveResult UPlayerAbilityComponent::RemoveActiveAbilityAt(int32 SlotIndex)
 {
 	if (!IsValidSlotIndex(SlotIndex, true))
 	{
-		return false;
+		return EAbilityAddRemoveResult::InvalidIndex;
 	}
-	
+	if (!ActiveAbilitySlots[SlotIndex])
+	{
+		return EAbilityAddRemoveResult::UnknownAbility;
+	}
 	ActiveAbilitySlots[SlotIndex] = nullptr;
-	return true;
+	return EAbilityAddRemoveResult::Success;
 }
 
-bool UPlayerAbilityComponent::RemovePassiveAbility(int32 SlotIndex)
+EAbilityAddRemoveResult UPlayerAbilityComponent::RemovePassiveAbilityAt(int32 SlotIndex)
 {
 	if (!IsValidSlotIndex(SlotIndex, false))
 	{
-		return false;
+		return EAbilityAddRemoveResult::InvalidIndex;
 	}
-	
+	if (!PassiveAbilitySlots[SlotIndex])
+	{
+		return EAbilityAddRemoveResult::UnknownAbility;
+	}
 	PassiveAbilitySlots[SlotIndex] = nullptr;
-	return true;
+	return EAbilityAddRemoveResult::Success;
 }
 
 void UPlayerAbilityComponent::ClearAllAbilities()
@@ -177,7 +145,7 @@ void UPlayerAbilityComponent::ClearAllAbilities()
 	{
 		ActiveAbilitySlots[i] = nullptr;
 	}
-	
+
 	// Clear passive abilities
 	for (int32 i = 0; i < MAX_PASSIVE_SLOTS; ++i)
 	{
@@ -187,34 +155,37 @@ void UPlayerAbilityComponent::ClearAllAbilities()
 
 bool UPlayerAbilityComponent::ExecuteAttack(const FVector& TargetLocation)
 {
-	if (!AttackAbility || !AttackAbility->CanExecute())
+	UAbilityActive* AttackActive = Cast<UAbilityActive>(AttackAbility);
+	if (!AttackActive || !AttackActive->CanExecute())
 	{
 		return false;
 	}
-	
-	AttackAbility->ExecuteWithDirection(TargetLocation);
+
+	AttackActive->Execute();
 	return true;
 }
 
 bool UPlayerAbilityComponent::ExecuteSpecial(const FVector& TargetLocation)
 {
-	if (!SpecialAbility || !SpecialAbility->CanExecute())
+	UAbilityActive* SpecialActive = Cast<UAbilityActive>(SpecialAbility);
+	if (!SpecialActive || !SpecialActive->CanExecute())
 	{
 		return false;
 	}
-	
-	SpecialAbility->ExecuteWithDirection(TargetLocation);
+
+	SpecialActive->Execute();
 	return true;
 }
 
 bool UPlayerAbilityComponent::ExecuteDodge(const FVector& Direction)
 {
-	if (!DodgeAbility || !DodgeAbility->CanExecute())
+	UAbilityActive* DodgeActive = Cast<UAbilityActive>(DodgeAbility);
+	if (!DodgeActive || !DodgeActive->CanExecute())
 	{
 		return false;
 	}
-	
-	DodgeAbility->ExecuteWithDirection(Direction);
+
+	DodgeActive->Execute();
 	return true;
 }
 
@@ -222,7 +193,7 @@ void UPlayerAbilityComponent::CheckAndTriggerAbilities()
 {
 	// Update passive abilities
 	UpdatePassiveAbilities();
-	
+
 	// Check active abilities for auto-trigger conditions
 	// This would be implemented based on specific game mechanics
 }
@@ -230,7 +201,7 @@ void UPlayerAbilityComponent::CheckAndTriggerAbilities()
 void UPlayerAbilityComponent::UpdatePassiveAbilities()
 {
 	// Update all passive abilities
-	for (UAbilityPassive* PassiveAbility : PassiveAbilitySlots)
+	for (UAbilityBase* PassiveAbility : PassiveAbilitySlots)
 	{
 		if (PassiveAbility)
 		{
@@ -251,3 +222,80 @@ bool UPlayerAbilityComponent::IsValidSlotIndex(int32 SlotIndex, bool bIsActiveSl
 		return SlotIndex >= 0 && SlotIndex < MAX_PASSIVE_SLOTS;
 	}
 }
+
+UAbilityActive* UPlayerAbilityComponent::GetActiveAbilityAt(int32 SlotIndex) const
+{
+	if (!IsValidSlotIndex(SlotIndex, true))
+	{
+		return nullptr;
+	}
+	return Cast<UAbilityActive>(ActiveAbilitySlots[SlotIndex]);
+}
+
+UAbilityPassive* UPlayerAbilityComponent::GetPassiveAbilityAt(int32 SlotIndex) const
+{
+	if (!IsValidSlotIndex(SlotIndex, false))
+	{
+		return nullptr;
+	}
+	return Cast<UAbilityPassive>(PassiveAbilitySlots[SlotIndex]);
+}
+
+#if WITH_EDITOR
+void UPlayerAbilityComponent::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)
+{
+	Super::PostEditChangeProperty(PropertyChangedEvent);
+
+	// Enforce slot types and ability types in editor
+	for (int32 i = 0; i < ActiveAbilitySlots.Num(); ++i)
+	{
+		if (UAbilityBase* Ability = ActiveAbilitySlots[i])
+		{
+			if (Ability->AbilityType != EAbilityType::Active)
+			{
+				ActiveAbilitySlots[i] = nullptr;
+			}
+			else
+			{
+				Ability->SlotType = EAbilitySlotType::Active;
+			}
+		}
+	}
+
+	for (int32 i = 0; i < PassiveAbilitySlots.Num(); ++i)
+	{
+		if (UAbilityBase* Ability = PassiveAbilitySlots[i])
+		{
+			if (Ability->AbilityType != EAbilityType::Passive)
+			{
+				PassiveAbilitySlots[i] = nullptr;
+			}
+			else
+			{
+				Ability->SlotType = EAbilitySlotType::Passive;
+			}
+		}
+	}
+
+	if (AttackAbility)
+	{
+		AttackAbility->AbilityType = EAbilityType::Active;
+		AttackAbility->SlotType = EAbilitySlotType::Innate;
+	}
+	if (SpecialAbility)
+	{
+		SpecialAbility->AbilityType = EAbilityType::Active;
+		SpecialAbility->SlotType = EAbilitySlotType::Innate;
+	}
+	if (DodgeAbility)
+	{
+		DodgeAbility->AbilityType = EAbilityType::Active;
+		DodgeAbility->SlotType = EAbilitySlotType::Innate;
+	}
+	if (CharacterPassiveInnate)
+	{
+		CharacterPassiveInnate->AbilityType = EAbilityType::Passive;
+		CharacterPassiveInnate->SlotType = EAbilitySlotType::Innate;
+	}
+}
+#endif

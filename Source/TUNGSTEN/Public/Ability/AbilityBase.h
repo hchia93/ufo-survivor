@@ -2,27 +2,18 @@
 
 #include "CoreMinimal.h"
 #include "UObject/Object.h"
-#include "Engine/TimerHandle.h"
+#include "Engine/EngineTypes.h"
+#include "Ability/AbilityDefine.h"
 #include "AbilityBase.generated.h"
 
-UENUM(BlueprintType)
-enum class EAbilityType : uint8
-{
-	Active,
-	Passive,
-	Innate
-};
-
-// Forward declaration
-class UAbilityCooldownHandler;
+class AActor;
+class UExecutionModule;
 
 /*
- *	AbilityBase : 
- *	- Base class for all abilities
- *	- Provides common interfaces for world context and owner actor
- *	- Does NOT handle cooldown, targeting, or execution logic
+ *	AbilityBase :
+ *	- Base class for all abilities (Active and Passive)
  */
-UCLASS(Blueprintable, BlueprintType, ClassGroup=(Ability), meta=(BlueprintSpawnableComponent))
+UCLASS(Abstract, Blueprintable, BlueprintType, ClassGroup = (Ability), meta = (BlueprintSpawnableComponent))
 class TUNGSTEN_API UAbilityBase : public UObject
 {
 	GENERATED_BODY()
@@ -30,28 +21,38 @@ class TUNGSTEN_API UAbilityBase : public UObject
 public:
 	UAbilityBase();
 
-	// Ability Type
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability")
+public:
+	/// Basic Properties
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Ability")
 	EAbilityType AbilityType = EAbilityType::Active;
 
-	// World Context Management
-	UFUNCTION(BlueprintCallable, Category = "Ability")
-	void SetWorldContext(UWorld* Context);
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Ability")
+	EAbilitySlotType SlotType = EAbilitySlotType::Active;
 
-	UFUNCTION(BlueprintPure, Category = "Ability")
-	UWorld* GetWorld() const override { return WorldContext; }
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Ability")
+	FString AbilityName = TEXT("DBG NO TEXT");
 
-	// Owner Actor Management
-	UFUNCTION(BlueprintCallable, Category = "Ability")
-	void SetOwnerActor(AActor* Actor);
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Ability")
+	FString AbilityDescription = TEXT("DBG NO TEXT");
 
-	UFUNCTION(BlueprintPure, Category = "Ability")
-	AActor* GetOwnerActor() const { return OwnerActor; }
-
-protected:
-	UPROPERTY()
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ability")
 	TObjectPtr<AActor> OwnerActor;
 
-	UPROPERTY()
-	TObjectPtr<UWorld> WorldContext;
+	UFUNCTION(BlueprintCallable, Category = "Ability")
+	bool TryActivate();
+
+	UFUNCTION(BlueprintCallable, Category = "Ability")
+	void SetOwner(AActor* NewOwner);
+
+	UFUNCTION(BlueprintPure, Category = "Ability")
+	virtual UWorld* GetWorld() const override;
+
+	UFUNCTION(BlueprintNativeEvent, Category = "Ability Execution")
+	bool CanExecute() const;
+
+	UFUNCTION(BlueprintNativeEvent, Category = "Ability Execution")
+	bool Commit();
+
+	UFUNCTION(BlueprintNativeEvent, Category = "Ability Execution")
+	void Execute();
 };

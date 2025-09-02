@@ -6,13 +6,15 @@
 
 class AActor;
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FAbilityCooldownEvent);
+
 /*
- *	AbilityCooldownHandler : 
+ *	AbilityCooldownHandler :
  *	- Handles cooldown logic for abilities
  *	- Manages cooldown timers and state
  *	- Provides cooldown status and progress information
  */
-UCLASS(Blueprintable, BlueprintType, ClassGroup=(Ability), meta=(BlueprintSpawnableComponent))
+UCLASS(Blueprintable, BlueprintType, ClassGroup = (Ability), meta = (BlueprintSpawnableComponent))
 class TUNGSTEN_API UAbilityCooldownHandler : public UObject
 {
 	GENERATED_BODY()
@@ -41,6 +43,20 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Cooldown")
 	void ResetCooldown(AActor* OwnerActor);
 
+	// Blueprint events (UMG can listen/override)
+	UFUNCTION(BlueprintImplementableEvent, Category = "Cooldown")
+	void OnEnterCooldown();
+
+	UFUNCTION(BlueprintImplementableEvent, Category = "Cooldown")
+	void OnExitCooldown();
+
+	// Events for UI/UMG to bind
+	UPROPERTY(BlueprintAssignable, Category = "Cooldown")
+	FAbilityCooldownEvent OnEnterCooldownEvent;
+
+	UPROPERTY(BlueprintAssignable, Category = "Cooldown")
+	FAbilityCooldownEvent OnExitCooldownEvent;
+
 protected:
 	// UObject, not AActor, so no BeginPlay
 
@@ -49,5 +65,5 @@ private:
 	FTimerHandle CooldownTimerHandle;
 
 	UFUNCTION()
-	void OnExitCooldown();
+	void HandleExitCooldown();
 };

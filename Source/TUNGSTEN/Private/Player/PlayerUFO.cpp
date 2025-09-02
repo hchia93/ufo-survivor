@@ -1,6 +1,7 @@
 #include "Player/PlayerUFO.h"
 #include "Ability/AbilityComponent.h"
-#include "DamageHandlerComponent.h"
+#include "Stats/StatsRuntimeComponent.h"
+#include "Stats/StatsLoaderComponent.h"
 #include "TUNGSTEN/TUNGSTEN.h"
 #include "Components/StaticMeshComponent.h"
 #include "Camera/CameraComponent.h"
@@ -35,8 +36,11 @@ APlayerUFO::APlayerUFO()
 	BeamMeshComponent->SetVisibility(false);
 	BeamMeshComponent->PrimaryComponentTick.bCanEverTick = false;
 
-	DamageHandlerComponent = CreateDefaultSubobject<UDamageHandlerComponent>(TEXT("DamageHandlerComponent"));
-	DamageHandlerComponent->PrimaryComponentTick.bCanEverTick = false;
+	RuntimeStatsComponent = CreateDefaultSubobject<UStatsRuntimeComponent>(TEXT("RuntimeStatsComponent"));
+	RuntimeStatsComponent->PrimaryComponentTick.bCanEverTick = false;
+
+	StatsLoaderComponent = CreateDefaultSubobject<UStatsLoaderComponent>(TEXT("StatsLoaderComponent"));
+	StatsLoaderComponent->PrimaryComponentTick.bCanEverTick = false;
 
 	AbilityComponent = CreateDefaultSubobject<UAbilityComponent>(TEXT("AbilityComponent"));
 	AbilityComponent->PrimaryComponentTick.bCanEverTick = true;

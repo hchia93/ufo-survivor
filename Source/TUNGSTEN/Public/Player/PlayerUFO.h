@@ -5,7 +5,8 @@
 #include "PlayerUFO.generated.h"
 
 class UAbilityComponent;
-class UDamageHandlerComponent;
+class UStatsRuntimeComponent;
+class UStatsLoaderComponent;
 class UStaticMeshComponent;
 class UCameraComponent;
 class USpringArmComponent;
@@ -304,7 +305,10 @@ protected:
 	TObjectPtr<UStaticMeshComponent> BeamMeshComponent;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
-	TObjectPtr<UDamageHandlerComponent> DamageHandlerComponent;
+	TObjectPtr<UStatsRuntimeComponent> RuntimeStatsComponent;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	TObjectPtr<UStatsLoaderComponent> StatsLoaderComponent;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	TObjectPtr<UAbilityComponent> AbilityComponent;

@@ -1,24 +1,36 @@
 #include "Ability/AbilityPassive.h"
+#include "Engine/World.h"
+#include "TimerManager.h"
 
 UAbilityPassive::UAbilityPassive()
 {
 	AbilityType = EAbilityType::Passive;
+	SlotType = EAbilitySlotType::Passive;
+	bIsAlwaysActive = false;
+	UpdateInterval = 0.1f;
 }
 
-void UAbilityPassive::ActivatePassive()
+bool UAbilityPassive::CanExecute_Implementation() const
 {
-	if (!bIsPassiveActive)
+	return true;
+}
+
+void UAbilityPassive::StartPassiveMonitoring()
+{
+	if (!OwnerActor || !GetWorld())
 	{
-		bIsPassiveActive = true;
-		OnPassiveActivated();
+		return;
+	}
+
+	// Start the passive update timer
+	GetWorld()->GetTimerManager().SetTimer(PassiveUpdateTimer, this, &UAbilityPassive::Execute, UpdateInterval, true);
+}
+
+void UAbilityPassive::StopPassiveMonitoring()
+{
+	if (GetWorld())
+	{
+		GetWorld()->GetTimerManager().ClearTimer(PassiveUpdateTimer);
 	}
 }
 
-void UAbilityPassive::DeactivatePassive()
-{
-	if (bIsPassiveActive)
-	{
-		bIsPassiveActive = false;
-		OnPassiveDeactivated();
-	}
-}

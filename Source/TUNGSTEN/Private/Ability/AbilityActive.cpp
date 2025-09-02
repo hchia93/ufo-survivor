@@ -1,31 +1,23 @@
 #include "Ability/AbilityActive.h"
+#include "Ability/AbilityCooldownHandler.h"
+#include "Engine/World.h"
+#include "GameFramework/Actor.h"
 
 UAbilityActive::UAbilityActive()
 {
 	AbilityType = EAbilityType::Active;
+	SlotType = EAbilitySlotType::Active;
+	CooldownHandler = nullptr;
 }
 
 bool UAbilityActive::CanExecute_Implementation() const
 {
-	return CooldownHandler && CooldownHandler->IsCooldownReady() && HasValidTarget();
-}
-
-bool UAbilityActive::HasValidTarget() const
-{
-	switch (AcquireTarget)
+	// First check base class conditions (owner and modules)
+	if (!Super::CanExecute())
 	{
-	case EAbilityAcquireTarget::NoTargetRequired:
-		return true;
-	case EAbilityAcquireTarget::SelfOnly:
-		return Targets.Num() > 0 && IsValid(Targets[0]) && Targets[0] == OwnerActor;
-	case EAbilityAcquireTarget::SingleAllyOnly:
-	case EAbilityAcquireTarget::SingleEnemyOnly:
-		return Targets.Num() > 0 && IsValid(Targets[0]);
-	case EAbilityAcquireTarget::MultipleAlly:
-	case EAbilityAcquireTarget::MultipleEnemy:
-		return Targets.Num() > 0;
-	default:
 		return false;
 	}
-}
 
+	// Then check cooldown
+	return CooldownHandler && CooldownHandler->IsCooldownReady();
+}

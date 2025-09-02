@@ -1,5 +1,5 @@
 #include "GameState/Helpers/ProjectilePoolComponent.h"
-#include "ProjectileBase.h"
+#include "Ability/Object/ProjectileBase.h"
 #include "Engine/World.h"
 #include "TUNGSTEN/TUNGSTEN.h"
 

@@ -38,7 +38,10 @@ void UAbilityCooldownHandler::EnterCooldown(AActor* OwnerActor)
 	}
 
 	bIsInCooldown = true;
-	OwnerActor->GetWorldTimerManager().SetTimer(CooldownTimerHandle, this, &UAbilityCooldownHandler::OnExitCooldown, CooldownTime, false);
+	OnEnterCooldown();
+	OnEnterCooldownEvent.Broadcast();
+
+	OwnerActor->GetWorldTimerManager().SetTimer(CooldownTimerHandle, this, &UAbilityCooldownHandler::HandleExitCooldown, CooldownTime, false);
 }
 
 void UAbilityCooldownHandler::ResetCooldown(AActor* OwnerActor)
@@ -48,11 +51,14 @@ void UAbilityCooldownHandler::ResetCooldown(AActor* OwnerActor)
 		return;
 	}
 
-	bIsInCooldown = false;
 	OwnerActor->GetWorldTimerManager().ClearTimer(CooldownTimerHandle);
+
+	HandleExitCooldown();
 }
 
-void UAbilityCooldownHandler::OnExitCooldown()
+void UAbilityCooldownHandler::HandleExitCooldown()
 {
 	bIsInCooldown = false;
+	OnExitCooldown();
+	OnExitCooldownEvent.Broadcast();
 }

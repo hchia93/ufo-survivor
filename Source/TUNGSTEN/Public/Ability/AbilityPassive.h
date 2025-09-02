@@ -2,16 +2,14 @@
 
 #include "CoreMinimal.h"
 #include "Ability/AbilityBase.h"
-#include "Ability/AbilityCooldownHandler.h"
+#include "TimerManager.h"
 #include "AbilityPassive.generated.h"
 
 /*
- *	AbilityPassive : 
- *	- Passive abilities that provide buffs or modify values
- *	- These abilities typically don't have cooldowns or targets
- *	- They modify stats, provide passive effects, or trigger on certain conditions
+ *	AbilityPassive :
+ *	- No cooldowns - designed for continuous or event-driven effects
  */
-UCLASS(Blueprintable, BlueprintType, ClassGroup=(Ability), meta=(BlueprintSpawnableComponent))
+UCLASS(Blueprintable, BlueprintType, ClassGroup = (Ability), meta = (BlueprintSpawnableComponent))
 class TUNGSTEN_API UAbilityPassive : public UAbilityBase
 {
 	GENERATED_BODY()
@@ -19,33 +17,24 @@ class TUNGSTEN_API UAbilityPassive : public UAbilityBase
 public:
 	UAbilityPassive();
 
-	/// Passive Effect Interface
-	UFUNCTION(BlueprintImplementableEvent, Category = "Ability")
-	void OnPassiveActivated();
+	/// Passive-Specific Properties
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Passive Ability")
+	bool bIsAlwaysActive = false;
 
-	UFUNCTION(BlueprintImplementableEvent, Category = "Ability")
-	void OnPassiveDeactivated();
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Passive Ability")
+	float UpdateInterval = 0.1f; // How often to check/update passive effects
 
-	/// Activation/Deactivation
-	UFUNCTION(BlueprintCallable, Category = "Ability")
-	void ActivatePassive();
+	/// Passive-Specific Functions
+	UFUNCTION(BlueprintCallable, Category = "Passive Ability")
+	void StartPassiveMonitoring();
 
-	UFUNCTION(BlueprintCallable, Category = "Ability")
-	void DeactivatePassive();
+	UFUNCTION(BlueprintCallable, Category = "Passive Ability")
+	void StopPassiveMonitoring();
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Ability")
-	bool bIsPassiveActive = false;
-
-	/// Optional Cooldown Support
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Cooldown")
-	bool bUseCooldown = false;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Cooldown", meta = (EditCondition = "bUseCooldown"))
-	TObjectPtr<UAbilityCooldownHandler> CooldownHandler;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Cooldown", meta = (EditCondition = "bUseCooldown"))
-	float CooldownTime = 1.0f;
+	/// Override CanExecute for passive abilities
+	virtual bool CanExecute_Implementation() const override;
 
 protected:
-	// UAbilityBase inherits from UObject, not AActor, so no BeginPlay
+	// Timer handle for passive updates
+	FTimerHandle PassiveUpdateTimer;
 };

@@ -1,6 +1,5 @@
 #include "Ability/AbilityComponent.h"
 #include "Ability/AbilityBase.h"
-#include "Ability/AbilityInnate.h"
 #include "Ability/AbilityActive.h"
 
 UAbilityComponent::UAbilityComponent()
@@ -28,30 +27,21 @@ void UAbilityComponent::InitializeAbilities()
 			UAbilityBase* NewAbility = NewObject<UAbilityBase>(this, AbilityClass);
 			if (NewAbility)
 			{
-				NewAbility->SetOwnerActor(GetOwner());
-				NewAbility->SetWorldContext(GetWorld());
+				NewAbility->SetOwner(GetOwner());
 				RuntimeAbilities.Add(NewAbility);
 			}
 		}
 	}
 }
 
-void UAbilityComponent::ExecuteAllAbilities()
+void UAbilityComponent::TryExecuteAllAbilities()
 {
 	for (UAbilityBase* Ability : RuntimeAbilities)
 	{
 		if (Ability)
 		{
-			// Check if it's an innate ability that can execute
-			if (UAbilityInnate* InnateAbility = Cast<UAbilityInnate>(Ability))
-			{
-				if (InnateAbility->CanExecute())
-				{
-					InnateAbility->Execute();
-				}
-			}
-			// Check if it's an active ability that can execute
-			else if (UAbilityActive* ActiveAbility = Cast<UAbilityActive>(Ability))
+			// Execute active abilities if ready
+			if (UAbilityActive* ActiveAbility = Cast<UAbilityActive>(Ability))
 			{
 				if (ActiveAbility->CanExecute())
 				{
